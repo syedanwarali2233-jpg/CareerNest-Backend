@@ -14,113 +14,75 @@ app.use(express.json());
 
 // Test Route
 app.get('/', (req, res) => {
-  res.send('CareerNest Backend is Running!');
+  res.send('CareerNest Server is Running!');
 });
 
-// Add New Job
+// POST - Create Job
 app.post('/api/jobs', async (req, res) => {
   try {
-    const newJob = new Job(req.body);
-    const savedJob = await newJob.save();
+    const job = new Job(req.body);
+    await job.save();
 
     res.status(201).json({
-      message: 'Job added successfully',
-      job: savedJob
+      message: 'Job posted successfully',
+      job
     });
   } catch (error) {
-    res.status(400).json({
-      message: 'Error adding job',
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Get All Jobs
+// GET - All Jobs
 app.get('/api/jobs', async (req, res) => {
   try {
     const jobs = await Job.find().sort({ postedAt: -1 });
-    res.status(200).json(jobs);
+    res.json(jobs);
   } catch (error) {
-    res.status(500).json({
-      message: 'Error fetching jobs',
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Submit Job Application
+// POST - Apply for Job
 app.post('/api/applications', async (req, res) => {
   try {
-    const {
-      job,
-      applicantName,
-      email,
-      phone,
-      coverLetter
-    } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(job)) {
-      return res.status(400).json({
-        message: 'Invalid job ID'
-      });
-    }
-
-    const existingJob = await Job.findById(job);
-
-    if (!existingJob) {
-      return res.status(404).json({
-        message: 'Job not found'
-      });
-    }
-
-    const newApplication = new Application({
-      job,
-      applicantName,
-      email,
-      phone,
-      coverLetter
-    });
-
-    const savedApplication = await newApplication.save();
+    const application = new Application(req.body);
+    await application.save();
 
     res.status(201).json({
-      message: 'Application submitted successfully!',
-      application: savedApplication
+      message: 'Application submitted successfully',
+      application
     });
   } catch (error) {
-    res.status(400).json({
-      message: 'Application submission failed',
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Get All Applications
+// GET - All Applications
 app.get('/api/applications', async (req, res) => {
   try {
     const applications = await Application.find()
       .populate('job', 'title company location')
       .sort({ appliedAt: -1 });
 
-    res.status(200).json(applications);
+    res.json(applications);
   } catch (error) {
-    res.status(500).json({
-      message: 'Error fetching applications',
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Update Application Status
+// PATCH - Update Application Status
 app.patch('/api/applications/:id/status', async (req, res) => {
   try {
+    const { id } = req.params;
     const { status } = req.body;
 
-    const allowedStatuses = [
-      'Pending',
-      'Shortlisted',
-      'Rejected'
-    ];
+    const allowedStatuses = ['Pending', 'Shortlisted', 'Rejected'];
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: 'Invalid application ID'
+      });
+    }
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -128,44 +90,37 @@ app.patch('/api/applications/:id/status', async (req, res) => {
       });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        message: 'Invalid application ID'
-      });
-    }
-
-    const updatedApplication = await Application.findByIdAndUpdate(
-      req.params.id,
+    const application = await Application.findByIdAndUpdate(
+      id,
       { status },
       { new: true, runValidators: true }
     ).populate('job', 'title company location');
 
-    if (!updatedApplication) {
+    if (!application) {
       return res.status(404).json({
         message: 'Application not found'
       });
     }
 
-    res.status(200).json({
-      message: 'Application status updated successfully!',
-      application: updatedApplication
+    res.json({
+      message: 'Application status updated successfully',
+      application
     });
-
   } catch (error) {
-    res.status(500).json({
-      message: 'Error updating application status',
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 });
+
+// Render Port
+const PORT = process.env.PORT || 5000;
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB Connected Successfully');
 
-    app.listen(5000, () => {
-      console.log('CareerNest Server running on port 5000');
+    app.listen(PORT, () => {
+      console.log(`CareerNest Server running on port ${PORT}`);
     });
   })
   .catch((error) => {
