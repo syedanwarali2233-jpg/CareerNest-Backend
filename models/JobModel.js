@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const jobSchema = new mongoose.Schema({
@@ -19,6 +20,21 @@ const jobSchema = new mongoose.Schema({
   jobType: {
     type: String,
     required: true
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: [
+      'IT',
+      'Marketing',
+      'Finance',
+      'Sales',
+      'HR',
+      'Education',
+      'Design',
+      'Healthcare',
+      'Other'
+    ]
   },
   description: {
     type: String,

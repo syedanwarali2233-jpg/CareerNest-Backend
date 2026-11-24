@@ -20,7 +20,34 @@ app.get('/', (req, res) => {
 // POST - Create Job
 app.post('/api/jobs', async (req, res) => {
   try {
-    const job = new Job(req.body);
+    const {
+      title,
+      company,
+      location,
+      salary,
+      jobType,
+      category,
+      description,
+      requirements
+    } = req.body;
+
+    if (!title || !company || !location || !jobType || !category || !description) {
+      return res.status(400).json({
+        message: 'Please fill all required job details'
+      });
+    }
+
+    const job = new Job({
+      title,
+      company,
+      location,
+      salary,
+      jobType,
+      category,
+      description,
+      requirements
+    });
+
     await job.save();
 
     res.status(201).json({
@@ -28,7 +55,7 @@ app.post('/api/jobs', async (req, res) => {
       job
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -53,7 +80,7 @@ app.post('/api/applications', async (req, res) => {
       application
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -61,7 +88,7 @@ app.post('/api/applications', async (req, res) => {
 app.get('/api/applications', async (req, res) => {
   try {
     const applications = await Application.find()
-      .populate('job', 'title company location')
+      .populate('job', 'title company location category')
       .sort({ appliedAt: -1 });
 
     res.json(applications);
@@ -94,7 +121,7 @@ app.patch('/api/applications/:id/status', async (req, res) => {
       id,
       { status },
       { new: true, runValidators: true }
-    ).populate('job', 'title company location');
+    ).populate('job', 'title company location category');
 
     if (!application) {
       return res.status(404).json({
